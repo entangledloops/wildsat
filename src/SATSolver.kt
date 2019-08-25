@@ -43,6 +43,12 @@ class SATSolver(numLiterals: Int, val clauses: List<Clause>)
     }
 }
 
+/**
+ * This is meant to be a simple-to-read and correct implementation; it is not efficient when
+ * the literal count is high. Converting the state to a string is unnecessary and expensive,
+ * but makes debugging easier. It prints the best known distance to go as it searches.
+ * @return true if satisfied, false if unsatisfiable
+ */
 fun SATSolver.greedyBFS(): Boolean {
     data class Move(val index: Int, val value: Boolean?)
     val history: Stack<Move> = Stack()
@@ -76,7 +82,6 @@ fun SATSolver.greedyBFS(): Boolean {
     var bestDistance = numUnsatisfied()
     while (!satisfied()) {
         ++iterations
-
         val prevDistance = bestDistance
 
         val nextMove = getMoves().filter {
@@ -94,8 +99,8 @@ fun SATSolver.greedyBFS(): Boolean {
 
         if (prevDistance != bestDistance) println(bestDistance)
 
-        if (nextMove == null) {
-            if (history.isEmpty()) return false
+        if (nextMove == null) { // no moves remaining?
+            if (history.isEmpty()) return false // backtrack impossible?
             undo()
         } else {
             closed.add(toString()) // add the current state to the closed list
@@ -105,11 +110,6 @@ fun SATSolver.greedyBFS(): Boolean {
 
     return true
 }
-
-/*// find first clause with an unset literal
-val clauseWithUnsetLit = clauses.find { clause -> null != clause.literals.find { lit -> null == literals[lit.index] } } ?: break
-val unsetLit: Literal = clauseWithUnsetLit.literals.find { lit -> null == literals[lit.index] } ?: continue
-literals[unsetLit.index] = true*/
 
 fun SATSolver.random(): Boolean {
     val random = Random(0)
@@ -137,9 +137,9 @@ fun parseFile(file: String): SATSolver {
                 }
                 else -> {
                     val literals: MutableList<Literal> = ArrayList()
-                    line.split(' ').filter { it.isNotBlank() }.forEach { variable ->
-                        val negated = variable.startsWith('-')
-                        val index = variable.removePrefix("-").toInt()
+                    line.split(' ').filter { it.isNotBlank() }.forEach { literal ->
+                        val negated = literal.startsWith('-')
+                        val index = literal.removePrefix("-").toInt()
                         if (index == 0) return@forEach
                         literals.add(Literal(index-1, negated))
                     }
