@@ -1,6 +1,7 @@
 import java.io.File
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.system.measureTimeMillis
 
 data class Literal(val index: Int, var negated: Boolean)
 data class Clause(var literals: List<Literal>)
@@ -34,7 +35,12 @@ class SATSolver(numLiterals: Int, val clauses: List<Clause>)
 
     fun solve(algorithm: SATSolver.() -> Boolean): Boolean {
         iterations = 0
-        return algorithm()
+        var solved = false
+        val elapsedMillis = measureTimeMillis {
+            solved = algorithm()
+        }
+        println("solved in: $elapsedMillis ms")
+        return solved
     }
 }
 
@@ -83,7 +89,7 @@ fun SATSolver.greedyBFS(): Boolean {
     }
 
     var bestDistance = numUnsatisfied()
-    println(bestDistance)
+    println("$bestDistance ${toString()}")
 
     while (!satisfied()) {
         ++iterations
@@ -102,13 +108,13 @@ fun SATSolver.greedyBFS(): Boolean {
             undo()
             dist
         }
-        if (prevDistance != bestDistance) println(bestDistance)
 
         if (nextMove == null) { // no moves remaining?
             if (history.isEmpty()) return false // backtrack impossible?
             undo()
         } else {
             move(nextMove)
+            if (prevDistance != bestDistance) println("$bestDistance ${toString()}")
         }
     }
 
@@ -124,36 +130,40 @@ fun SATSolver.random(): Boolean {
 }
 
 fun parseFile(file: String): SATSolver {
+    println("parsing: $file")
     var vars = 0
     var numClauses = 0
     val clauses: MutableList<Clause> = ArrayList()
-    try {
-        File(file).forEachLine { rawLine ->
-            val line = rawLine.trim()
-            when {
-                line.startsWith('c') -> return@forEachLine
-                line.startsWith('p') -> {
-                    val parts = line.split(' ')
-                    require(parts[1] == "cnf") { "file format unknown: ${parts[1]}" }
-                    vars = parts[2].toInt()
-                    numClauses = parts[3].toInt()
-                }
-                else -> {
-                    val literals: MutableList<Literal> = ArrayList()
-                    line.split(' ').filter { it.isNotBlank() }.forEach { literal ->
-                        val negated = literal.startsWith('-')
-                        val index = literal.removePrefix("-").toInt()
-                        if (index == 0) return@forEach
-                        literals.add(Literal(index-1, negated))
+    val elapsedMillis = measureTimeMillis {
+        try {
+            File(file).forEachLine { rawLine ->
+                val line = rawLine.trim()
+                when {
+                    line.startsWith('c') -> return@forEachLine
+                    line.startsWith('p') -> {
+                        val parts = line.split(' ')
+                        require(parts[1] == "cnf") { "file format unknown: ${parts[1]}" }
+                        vars = parts[2].toInt()
+                        numClauses = parts[3].toInt()
                     }
-                    if (literals.isNotEmpty()) clauses.add(Clause(literals))
+                    else -> {
+                        val literals: MutableList<Literal> = ArrayList()
+                        line.split(' ').filter { it.isNotBlank() }.forEach { literal ->
+                            val negated = literal.startsWith('-')
+                            val index = literal.removePrefix("-").toInt()
+                            if (index == 0) return@forEach
+                            literals.add(Literal(index - 1, negated))
+                        }
+                        if (literals.isNotEmpty()) clauses.add(Clause(literals))
+                    }
                 }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
-    catch (e: Exception) {
-        e.printStackTrace()
-    }
+
+    println("parsed in: $elapsedMillis ms")
 
     require(numClauses == clauses.size) {
         "cnf claims $numClauses clauses, but file contains ${clauses.size}"
@@ -164,8 +174,13 @@ fun parseFile(file: String): SATSolver {
 
 fun main(args: Array<String>) {
     val solver = parseFile(args.first())
+    println("""
+        literals: ${solver.literals.size}
+        clauses: ${solver.clauses.size}
+        distance to goal:""".trimIndent()
+    )
     if (solver.solve(SATSolver::greedyBFS)) {
-        println(solver)
+        println("solution found:\n${solver}")
     } else {
         println("unsatisfiable")
     }
