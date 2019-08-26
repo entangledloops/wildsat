@@ -60,8 +60,8 @@ fun SATSolver.greedyBFS(): Boolean {
     }
 
     // filter available moves down to those participating in unsatisfied clauses
-    fun getLiterals(): List<Int> {
-        val literals: MutableList<Int> = ArrayList()
+    fun getLiterals(): Set<Int> {
+        val literals: MutableSet<Int> = HashSet()
         for (clause in clauses) {
             if (!satisfied(clause)) {
                 for (literal in clause.literals) literals.add(literal.index)
