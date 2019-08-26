@@ -52,8 +52,8 @@ class SATSolver(numLiterals: Int, val clauses: List<Clause>)
  */
 fun SATSolver.greedyBFS(): Boolean {
     data class Move(val index: Int, val value: Boolean)
-    val history: Stack<Move> = Stack()
-    val closed: MutableSet<String> = HashSet()
+    val history = Stack<Move>()
+    val closed = HashSet<String>()
 
     fun move(move: Move) {
         history.add(Move(move.index, literals[move.index])) // add current state to history
@@ -67,7 +67,7 @@ fun SATSolver.greedyBFS(): Boolean {
 
     // filter available moves down to those participating in unsatisfied clauses
     fun getLiterals(): Set<Int> {
-        val literals: MutableSet<Int> = HashSet()
+        val literals = HashSet<Int>()
         for (clause in clauses) {
             if (!satisfied(clause)) {
                 for (literal in clause.literals) literals.add(literal.index)
@@ -78,7 +78,7 @@ fun SATSolver.greedyBFS(): Boolean {
 
     fun getMoves(): List<Move> {
         val literals = getLiterals()
-        val moves: MutableList<Move> = ArrayList()
+        val moves = ArrayList<Move>()
         for (i in literals) {
             when(this.literals[i]) {
                 true -> moves.add(Move(i, false))
@@ -133,7 +133,7 @@ fun parseFile(file: String): SATSolver {
     println("parsing: $file")
     var vars = 0
     var numClauses = 0
-    val clauses: MutableList<Clause> = ArrayList()
+    val clauses = ArrayList<Clause>()
     val elapsedMillis = measureTimeMillis {
         try {
             File(file).forEachLine { rawLine ->
@@ -147,7 +147,7 @@ fun parseFile(file: String): SATSolver {
                         numClauses = parts[3].toInt()
                     }
                     else -> {
-                        val literals: MutableList<Literal> = ArrayList()
+                        val literals = ArrayList<Literal>()
                         line.split(' ').filter { it.isNotBlank() }.forEach { literal ->
                             val negated = literal.startsWith('-')
                             val index = literal.removePrefix("-").toInt()
@@ -180,7 +180,7 @@ fun main(args: Array<String>) {
         distance to goal:""".trimIndent()
     )
     if (solver.solve(SATSolver::greedyBFS)) {
-        println("solution found:\n${solver}")
+        println("solution found:\n$solver")
     } else {
         println("unsatisfiable")
     }
