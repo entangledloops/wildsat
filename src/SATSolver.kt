@@ -13,17 +13,17 @@ class SATSolver(numLiterals: Int, val clauses: List<Clause>)
     var iterations = 0
 
     override fun toString(): String = buildString {
-        for (literal in literals) {
-            append(when (literal) {
-                true -> 'T'
-                else -> 'F'
-            })
+        literals.forEach {
+            when (it) {
+                true -> append('T')
+                else -> append('F')
+            }
         }
     }
 
     fun satisfied(): Boolean = clauses.all { satisfied(it) }
     fun satisfied(clause: Clause): Boolean {
-        for (literal in clause.literals) {
+        clause.literals.forEach { literal ->
             val value = literals[literal.index]
             if ((value && !literal.negated) || (!value && literal.negated)) return true
         }
@@ -52,6 +52,7 @@ class SATSolver(numLiterals: Int, val clauses: List<Clause>)
  */
 fun SATSolver.greedyBFS(): Boolean {
     data class Move(val index: Int, val value: Boolean)
+
     val history = Stack<Move>()
     val closed = HashSet<String>()
 
@@ -66,26 +67,14 @@ fun SATSolver.greedyBFS(): Boolean {
     }
 
     // filter available moves down to those participating in unsatisfied clauses
-    fun getLiterals(): Set<Int> {
-        val literals = HashSet<Int>()
-        for (clause in clauses) {
-            if (!satisfied(clause)) {
-                for (literal in clause.literals) literals.add(literal.index)
-            }
+    fun getLiterals(): Set<Int> = HashSet<Int>().apply {
+        clauses.filterNot { satisfied(it) }.forEach { clause ->
+            for (lit in clause.literals) add(lit.index)
         }
-        return literals
     }
 
-    fun getMoves(): List<Move> {
-        val literals = getLiterals()
-        val moves = ArrayList<Move>()
-        for (i in literals) {
-            when(this.literals[i]) {
-                true -> moves.add(Move(i, false))
-                else -> moves.add(Move(i, true))
-            }
-        }
-        return moves
+    fun getMoves(): List<Move> = ArrayList<Move>().apply {
+        getLiterals().forEach { add(Move(it, !this@greedyBFS.literals[it])) }
     }
 
     var distance = numUnsatisfied()
@@ -109,12 +98,12 @@ fun SATSolver.greedyBFS(): Boolean {
             dist
         }
 
-        if (nextMove == null) { // no moves remaining?
-            if (history.isEmpty()) return false // backtrack impossible?
-            undo()
-        } else {
+        if (nextMove != null) {
             move(nextMove)
             if (prevDistance != distance) println("$distance ${toString()}")
+        } else { // no moves remaining?
+            if (history.isEmpty()) return false // backtrack impossible?
+            undo()
         }
     }
 
