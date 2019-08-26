@@ -69,7 +69,7 @@ fun SATSolver.greedyBFS(): Boolean {
     // filter available moves down to those participating in unsatisfied clauses
     fun getLiterals(): Set<Int> = HashSet<Int>().apply {
         clauses.filterNot { satisfied(it) }.forEach { clause ->
-            for (lit in clause.literals) add(lit.index)
+            clause.literals.forEach { add(it.index) }
         }
     }
 
