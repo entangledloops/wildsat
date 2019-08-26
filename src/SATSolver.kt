@@ -88,14 +88,14 @@ fun SATSolver.greedyBFS(): Boolean {
         return moves
     }
 
-    var bestDistance = numUnsatisfied()
-    println("$bestDistance ${toString()}")
+    var distance = numUnsatisfied()
+    println("$distance ${toString()}")
 
-    while (!satisfied()) {
+    while (distance != 0) {
         ++iterations
         closed.add(toString()) // add the current state to the closed list
 
-        val prevDistance = bestDistance
+        val prevDistance = distance
         val nextMove = getMoves().filter {
             move(it)
             val ret = !closed.contains(toString())
@@ -104,7 +104,7 @@ fun SATSolver.greedyBFS(): Boolean {
         }.minBy {
             move(it)
             val dist = numUnsatisfied()
-            if (dist < bestDistance) bestDistance = dist
+            if (dist < distance) distance = dist
             undo()
             dist
         }
@@ -114,7 +114,7 @@ fun SATSolver.greedyBFS(): Boolean {
             undo()
         } else {
             move(nextMove)
-            if (prevDistance != bestDistance) println("$bestDistance ${toString()}")
+            if (prevDistance != distance) println("$distance ${toString()}")
         }
     }
 

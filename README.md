@@ -5,7 +5,7 @@ Call `solve()` and hand it an algorithm to use.
 
 Provided:
 ```
-Greedy BFS
+Greedy BFS + Backtracking
 Random Search
 ```
 Example run:
