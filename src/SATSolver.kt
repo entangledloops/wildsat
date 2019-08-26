@@ -7,15 +7,15 @@ data class Clause(var literals: List<Literal>)
 
 class SATSolver(numLiterals: Int, val clauses: List<Clause>)
 {
-    val literals: Array<Boolean?> = Array(numLiterals) { null }
+    val random = Random(0)
+    val literals = Array(numLiterals) { random.nextBoolean() }
     var iterations = 0
 
     override fun toString(): String = buildString {
         for (literal in literals) {
             append(when (literal) {
                 true -> 'T'
-                false -> 'F'
-                else -> 'U'
+                else -> 'F'
             })
         }
     }
@@ -23,7 +23,7 @@ class SATSolver(numLiterals: Int, val clauses: List<Clause>)
     fun satisfied(): Boolean = clauses.all { satisfied(it) }
     fun satisfied(clause: Clause): Boolean {
         for (literal in clause.literals) {
-            val value = literals[literal.index] ?: continue
+            val value = literals[literal.index]
             if ((value && !literal.negated) || (!value && literal.negated)) return true
         }
         return false
@@ -31,11 +31,6 @@ class SATSolver(numLiterals: Int, val clauses: List<Clause>)
 
     fun numSatisfied(): Int = clauses.count { satisfied(it) }
     fun numUnsatisfied(): Int = clauses.size - numSatisfied()
-
-    fun print(): SATSolver {
-        for (i in 0..literals.size) println("${i+1}: ${literals[i]}")
-        return this
-    }
 
     fun solve(algorithm: SATSolver.() -> Boolean): Boolean {
         iterations = 0
@@ -50,7 +45,7 @@ class SATSolver(numLiterals: Int, val clauses: List<Clause>)
  * @return true if satisfied, false if unsatisfiable
  */
 fun SATSolver.greedyBFS(): Boolean {
-    data class Move(val index: Int, val value: Boolean?)
+    data class Move(val index: Int, val value: Boolean)
     val history: Stack<Move> = Stack()
     val closed: MutableSet<String> = HashSet()
 
@@ -64,26 +59,37 @@ fun SATSolver.greedyBFS(): Boolean {
         history.pop() // remove the undo move from history
     }
 
+    // filter available moves down to those participating in unsatisfied clauses
+    fun getLiterals(): List<Int> {
+        val literals: MutableList<Int> = ArrayList()
+        for (clause in clauses) {
+            if (!satisfied(clause)) {
+                for (literal in clause.literals) literals.add(literal.index)
+            }
+        }
+        return literals
+    }
+
     fun getMoves(): List<Move> {
+        val literals = getLiterals()
         val moves: MutableList<Move> = ArrayList()
-        for (i in literals.indices) {
-            when(literals[i]) {
+        for (i in literals) {
+            when(this.literals[i]) {
                 true -> moves.add(Move(i, false))
-                false -> moves.add(Move(i, true))
-                else -> {
-                    moves.add(Move(i, true))
-                    moves.add(Move(i, false))
-                }
+                else -> moves.add(Move(i, true))
             }
         }
         return moves
     }
 
     var bestDistance = numUnsatisfied()
+    println(bestDistance)
+
     while (!satisfied()) {
         ++iterations
-        val prevDistance = bestDistance
+        closed.add(toString()) // add the current state to the closed list
 
+        val prevDistance = bestDistance
         val nextMove = getMoves().filter {
             move(it)
             val ret = !closed.contains(toString())
@@ -96,14 +102,12 @@ fun SATSolver.greedyBFS(): Boolean {
             undo()
             dist
         }
-
         if (prevDistance != bestDistance) println(bestDistance)
 
         if (nextMove == null) { // no moves remaining?
             if (history.isEmpty()) return false // backtrack impossible?
             undo()
         } else {
-            closed.add(toString()) // add the current state to the closed list
             move(nextMove)
         }
     }
@@ -112,7 +116,6 @@ fun SATSolver.greedyBFS(): Boolean {
 }
 
 fun SATSolver.random(): Boolean {
-    val random = Random(0)
     while (!satisfied()) {
         ++iterations
         literals[random.nextInt(literals.size)] = random.nextBoolean()
@@ -125,8 +128,8 @@ fun parseFile(file: String): SATSolver {
     var numClauses = 0
     val clauses: MutableList<Clause> = ArrayList()
     try {
-        File(file).forEachLine {
-            val line = it.trim()
+        File(file).forEachLine { rawLine ->
+            val line = rawLine.trim()
             when {
                 line.startsWith('c') -> return@forEachLine
                 line.startsWith('p') -> {
@@ -161,6 +164,10 @@ fun parseFile(file: String): SATSolver {
 
 fun main(args: Array<String>) {
     val solver = parseFile(args.first())
-    println(solver.solve(SATSolver::greedyBFS))
-    println(solver.iterations)
+    if (solver.solve(SATSolver::greedyBFS)) {
+        println(solver)
+    } else {
+        println("unsatisfiable")
+    }
+    println("search iterations: ${solver.iterations}")
 }
