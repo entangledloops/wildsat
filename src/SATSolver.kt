@@ -74,7 +74,7 @@ fun SATSolver.greedyBFS(): Boolean {
     }
 
     fun getMoves(): List<Move> = ArrayList<Move>().apply {
-        getLiterals().forEach { add(Move(it, !this@greedyBFS.literals[it])) }
+        getLiterals().forEach { add(Move(it, !literals[it])) }
     }
 
     var distance = numUnsatisfied()
@@ -85,18 +85,20 @@ fun SATSolver.greedyBFS(): Boolean {
         closed.add(toString()) // add the current state to the closed list
 
         val prevDistance = distance
-        val nextMove = getMoves().filter {
-            move(it)
-            val ret = !closed.contains(toString())
-            undo()
-            ret
-        }.minBy {
-            move(it)
-            val dist = numUnsatisfied()
-            if (dist < distance) distance = dist
-            undo()
-            dist
-        }
+        val nextMove = getMoves()
+            .asSequence()
+            .filter {
+                move(it)
+                val ret = !closed.contains(toString())
+                undo()
+                ret
+            }.minBy {
+                move(it)
+                val dist = numUnsatisfied()
+                if (dist < distance) distance = dist
+                undo()
+                dist
+            }
 
         if (nextMove != null) {
             move(nextMove)
