@@ -85,8 +85,7 @@ fun SATSolver.greedyBFS(): Boolean {
         closed.add(toString()) // add the current state to the closed list
 
         val prevDistance = distance
-        val nextMove = getMoves()
-            .asSequence()
+        val nextMove = getMoves().asSequence()
             .filter {
                 move(it)
                 val ret = !closed.contains(toString())
@@ -130,13 +129,16 @@ fun parseFile(file: String): SATSolver {
             File(file).forEachLine { rawLine ->
                 val line = rawLine.trim()
                 when {
+                    // comment
                     line.startsWith('c') -> return@forEachLine
+                    // header
                     line.startsWith('p') -> {
                         val parts = line.split(' ')
-                        require(parts[1] == "cnf") { "file format unknown: ${parts[1]}" }
+                        require(parts[1].toLowerCase() == "cnf") { "file format unknown: ${parts[1]}" }
                         vars = parts[2].toInt()
                         numClauses = parts[3].toInt()
                     }
+                    // body
                     else -> {
                         val literals = ArrayList<Literal>()
                         line.split(' ').filter { it.isNotBlank() }.forEach { literal ->

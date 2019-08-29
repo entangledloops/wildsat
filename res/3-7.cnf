@@ -1,3 +1,6 @@
+c Simple test file by Stephen Dunn
+c https://www.github.com/entangledloops/wildsat
+c
 p cnf 3 7
 1 2 -3
 1 -2 3
